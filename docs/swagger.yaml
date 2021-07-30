@@ -1,0 +1,940 @@
+basePath: /
+definitions:
+  controllers.Login:
+    properties:
+      device_id:
+        type: string
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  controllers.Logout:
+    properties:
+      device_id:
+        type: string
+    type: object
+  controllers.Refresh:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  models.CreatePermission:
+    properties:
+      name:
+        type: string
+    type: object
+  models.CreateRole:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+    type: object
+  models.CreateUser:
+    properties:
+      email:
+        type: string
+      firstname:
+        type: string
+      lastname:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  models.EnableUser:
+    properties:
+      enabled:
+        type: boolean
+    type: object
+  models.Forgot_User_Password_Payload:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  models.LoginResponse:
+    properties:
+      access_token:
+        type: string
+      device_id:
+        type: string
+      expiry_date:
+        type: integer
+      refresh_token:
+        type: string
+    type: object
+  models.Permission:
+    properties:
+      created_at:
+        type: string
+      created_by:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      updated_at:
+        type: string
+      updated_by:
+        type: string
+    type: object
+  models.Role:
+    properties:
+      created_at:
+        type: string
+      created_by:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      permissions:
+        items:
+          $ref: '#/definitions/models.Permission'
+        type: array
+      updated_at:
+        type: string
+      updated_by:
+        type: string
+    type: object
+  models.Role_Permission_Payload:
+    properties:
+      permissions:
+        items:
+          type: integer
+        type: array
+    type: object
+  models.SendMail:
+    properties:
+      email:
+        type: string
+    type: object
+  models.Set_User_Password_Payload:
+    properties:
+      password:
+        type: string
+    type: object
+  models.User:
+    properties:
+      created_at:
+        type: string
+      created_by:
+        type: string
+      email:
+        type: string
+      enabled:
+        type: boolean
+      firstname:
+        type: string
+      id:
+        type: string
+      lastname:
+        type: string
+      password:
+        type: string
+      provider:
+        type: string
+      roles:
+        items:
+          $ref: '#/definitions/models.Role'
+        type: array
+      updated_at:
+        type: string
+      updated_by:
+        type: string
+      username:
+        type: string
+    type: object
+  models.User_Role_Payload:
+    properties:
+      users:
+        items:
+          type: string
+        type: array
+    type: object
+  models.UserResponse:
+    properties:
+      created_at:
+        type: string
+      created_by:
+        type: string
+      email:
+        type: string
+      enabled:
+        type: boolean
+      firstname:
+        type: string
+      id:
+        type: string
+      lastname:
+        type: string
+      provider:
+        type: string
+      roles:
+        items:
+          $ref: '#/definitions/models.Role'
+        type: array
+      updated_at:
+        type: string
+      updated_by:
+        type: string
+      username:
+        type: string
+    type: object
+info:
+  contact:
+    name: API Support
+  description: This is an RBAC based full fledge API serice for managing users, roles
+    and permissions in the system
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Truvest Identity Management Service APIs
+  version: "1.0"
+paths:
+  /heartbeat:
+    get:
+      consumes:
+      - application/json
+      description: Get heartbeat of the system. This API can be used for Service discovery
+        and to get the Health Status.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Get heartbeat of the system
+      tags:
+      - Heartbeat
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Login to the system. It returns the accessToken, refreshToken,
+        expiry and device_id in a JSON format. You need to pass email and password
+        along with a unique device_id. You can use device fingerprint or browser fingerprint
+        to generate a unique device_id. The access and refresh token will be mapped
+        to this id so that whenever the user logs out, it can detect the device from
+        which the user is logging out in case of multi-session login and can expire
+        the JWT for that specific device.
+      parameters:
+      - description: Login
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.Login'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.LoginResponse'
+      summary: Login to the system
+      tags:
+      - Login
+  /logout:
+    post:
+      consumes:
+      - application/json
+      description: User can logout from the system using this API. User need to pass
+        device_id so that he can be logged out of the specific device during multi-session
+        login. This will expire the JWT for the device from where he has logged in.
+      parameters:
+      - description: Logout
+        in: body
+        name: logout
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.Logout'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Logout from the system
+      tags:
+      - Login
+  /logout/{provider}:
+    post:
+      consumes:
+      - application/json
+      description: User can logout from the system and OAuth provider using this API.
+        User need to pass the provider as param and last device_id with which user
+        logged in.
+      parameters:
+      - description: OAuth provider
+        in: path
+        name: provider
+        required: true
+        type: string
+      - description: Logout
+        in: body
+        name: logout
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.Logout'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Logout from the system using OAuth provider
+      tags:
+      - OAuth
+  /permissions:
+    get:
+      consumes:
+      - application/json
+      description: Get all permissions in the system. In order to access this API,
+        someone must have "VIEW_PERMISSION" Permission tagged to its role.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Permission'
+      security:
+      - ApiKeyAuth: []
+      summary: Get all Permissions in the system
+      tags:
+      - Permissions
+    post:
+      consumes:
+      - application/json
+      description: Create a permission in the system.User must have "MANAGE_PERMISSION"
+        permission tagged to its role in order to access this API
+      parameters:
+      - description: Create Permission
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreatePermission'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Permission'
+      security:
+      - ApiKeyAuth: []
+      summary: Create a permission in the system
+      tags:
+      - Permission
+  /permissions/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a permission by id in the system. In order to access this
+        API, someone must have "MANAGE_PERMISSION" Permission tagged to its role.
+      parameters:
+      - description: id of the Permission
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: ""
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a permission by id in the system
+      tags:
+      - Permission
+    get:
+      consumes:
+      - application/json
+      description: Get details of a permission by ID in the system. In order to access
+        this API, someone must have "VIEW_PERMISSION" Permission tagged to its role.
+      parameters:
+      - description: ID of the permission to get
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Permission'
+      security:
+      - ApiKeyAuth: []
+      summary: Get a Permission by id in the system
+      tags:
+      - Permission
+    put:
+      consumes:
+      - application/json
+      description: Update a permission by id in the system. In order to access this
+        API, someone must have "MANAGE_PERMISSION" Permission tagged to its role.
+      parameters:
+      - description: id of the Permission
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Create Permission
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreatePermission'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Permission'
+      security:
+      - ApiKeyAuth: []
+      summary: Update a permission by id in the system
+      tags:
+      - Permission
+  /refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refresh JWT token to Login to the system. It returns the accessToken,
+        refreshToken and expiry in a JSON format. You need to pass the refresh token
+        from the previous call.
+      parameters:
+      - description: Refresh
+        in: body
+        name: refresh
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.Refresh'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.LoginResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Refresh JWT Token to Login to the system
+      tags:
+      - Login
+  /roles:
+    get:
+      consumes:
+      - application/json
+      description: Get all roles in the system. In order to access this API, someone
+        must have "ROLES_VIEW" Permission tagged to its role.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Role'
+      security:
+      - ApiKeyAuth: []
+      summary: Get all Roles in the system
+      tags:
+      - Roles
+    post:
+      consumes:
+      - application/json
+      description: Create a role in the system. User must have "MANAGE_ROLES" permission
+        tagged to its role in order to use this API.
+      parameters:
+      - description: Create Role
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateRole'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Role'
+      security:
+      - ApiKeyAuth: []
+      summary: Create a role in the system
+      tags:
+      - Role
+  /roles/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a role by id in the system. In order to access this API,
+        someone must have "MANAGE_ROLES" Permission tagged to its role.
+      parameters:
+      - description: id of the Role
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: ""
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a role by id in the system
+      tags:
+      - Role
+    get:
+      consumes:
+      - application/json
+      description: Get a role by id in the system. In order to access this API, someone
+        must have "ROLES_VIEW" Permission tagged to its role.
+      parameters:
+      - description: ID of the role to get
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Role'
+      security:
+      - ApiKeyAuth: []
+      summary: Get a Role by id in the system
+      tags:
+      - Role
+    put:
+      consumes:
+      - application/json
+      description: Update a role by id in the system. In order to access this API,
+        someone must have "MANAGE_ROLES" Permission tagged to its role.
+      parameters:
+      - description: id of the Role
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Create Role
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateRole'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Role'
+      security:
+      - ApiKeyAuth: []
+      summary: Update a role by id in the system
+      tags:
+      - Role
+  /roles/{id}/permissions:
+    post:
+      consumes:
+      - application/json
+      description: Add permissions to role by id in the system. In order to access
+        this API, someone must have "MANAGE_PERMISSION" and "PERMISSION_ASSIGN_TO_ROLE"
+        Permission tagged to its role.
+      parameters:
+      - description: id of the Role
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Role Permission Payload
+        in: body
+        name: permission
+        required: true
+        schema:
+          $ref: '#/definitions/models.Role_Permission_Payload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      security:
+      - ApiKeyAuth: []
+      summary: Add permissions to role by id in the system
+      tags:
+      - Role
+  /roles/{id}/users:
+    post:
+      consumes:
+      - application/json
+      description: Add users to role by id in the system. In order to access this
+        API, someone must have "USERS_ASSIGN_TO_ROLE" Permission tagged to its role.
+      parameters:
+      - description: id of the Role
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: User Role Payload
+        in: body
+        name: permission
+        required: true
+        schema:
+          $ref: '#/definitions/models.User_Role_Payload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      security:
+      - ApiKeyAuth: []
+      summary: Add users to role by id in the system
+      tags:
+      - Role
+  /roles/{id1}/permissions/{id2}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete permissions from role by id in the system.
+      parameters:
+      - description: id of the Role
+        in: path
+        name: id1
+        required: true
+        type: integer
+      - description: id of the Permission
+        in: path
+        name: id2
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      security:
+      - ApiKeyAuth: []
+      summary: Delete permissions from role by id in the system
+      tags:
+      - Role
+  /roles/{id1}/users/{id2}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete users from role by id in the system. In order to access
+        this API, someone must have
+      parameters:
+      - description: id of the Role
+        in: path
+        name: id1
+        required: true
+        type: integer
+      - description: id of the User
+        in: path
+        name: id2
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      security:
+      - ApiKeyAuth: []
+      summary: Delete users from role by id in the system
+      tags:
+      - Role
+  /signup:
+    post:
+      consumes:
+      - application/json
+      description: Signup as a user in the system. If Password is not passed while
+        creating User, then it creates User with auto-generated password. The Password
+        is then sent through Email.
+      parameters:
+      - description: Create User
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateUser'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.UserResponse'
+      summary: Signup as a user in the system
+      tags:
+      - SignUp
+  /user/me:
+    get:
+      consumes:
+      - application/json
+      description: Get the logged in user details by Authorization header being passed.
+        This is useful by other microservices to check for authorization based upon
+        the roles and permissions listed.
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: '#/definitions/models.UserResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get the Logged in User details
+      tags:
+      - User
+  /users:
+    get:
+      consumes:
+      - application/json
+      description: Get details of all users in the system. In order to access this
+        API, someone must have "SYSTEM_ADMIN" and "USERS_VIEW" Permission tagged to
+        its role.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+      security:
+      - ApiKeyAuth: []
+      summary: Get all users in the system
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      description: Create a user by ID in the system. In order to access this API,
+        someone must have "USERS_CREATE" Permission tagged to its role. If Password
+        is not passed while creating User, then it creates User with auto-generated
+        password and sends it through Email.
+      parameters:
+      - description: Create User
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateUser'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.UserResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Create a user in the system
+      tags:
+      - User
+  /users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a user by ID in the system. In order to access this API,
+        someone must have "USERS_CREATE" Permission tagged to its role.
+      parameters:
+      - description: ID of the user to be deleted
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: ""
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a user in the system
+      tags:
+      - User
+    get:
+      consumes:
+      - application/json
+      description: Get details of a user by ID in the system. In order to access this
+        API, someone must have "USERS_VIEW" Permission tagged to its role.
+      parameters:
+      - description: ID of the user to get
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UserResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get a user by ID in the system
+      tags:
+      - User
+    put:
+      consumes:
+      - application/json
+      description: Update a user by ID in the system. In order to access this API,
+        someone must have "USERS_CREATE" Permission tagged to its role.
+      parameters:
+      - description: ID of the user to be updated
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update User
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateUser'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UserResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Update a user in the system
+      tags:
+      - User
+  /users/{id}/enableUser:
+    put:
+      consumes:
+      - application/json
+      description: Enable/Disable a user by ID in the system. In order to access this
+        API, someone must have "USERS_CREATE" Permission tagged to its role. Set Enabled
+        field in payload to true to enable a user/Set Enabled field in payload to
+        false to disable a user
+      parameters:
+      - description: ID of the user to be updated
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Enable User
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.EnableUser'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UserResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Enable/Disable a user in the system
+      tags:
+      - User
+  /users/{id}/setPassword:
+    post:
+      consumes:
+      - application/json
+      description: Update a user's password by ID in the system. The User himself
+        can only change the password through this endpoint.
+      parameters:
+      - description: ID of the user to be updated
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update User
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.Set_User_Password_Payload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      security:
+      - ApiKeyAuth: []
+      summary: Set the Password of the user.
+      tags:
+      - User
+  /users/forgotPassword:
+    post:
+      consumes:
+      - application/json
+      description: Set the Password of the user if he has forgotten.
+      parameters:
+      - description: Forgot Password
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.Forgot_User_Password_Payload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      summary: Set the Password of the user if he has forgotten
+      tags:
+      - User
+  /users/sendMail:
+    post:
+      consumes:
+      - application/json
+      description: Send a mail with a link for the user to reset password. This can
+        be used in combination with Forget Password API to make sure a legitimate
+        user is trying to reset his password.
+      parameters:
+      - description: Send Email
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.SendMail'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      summary: Send a mail with a link for the user to reset password
+      tags:
+      - User
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
